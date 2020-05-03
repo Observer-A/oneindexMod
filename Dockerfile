@@ -1,15 +1,20 @@
 FROM php:fpm-alpine
-WORKDIR /var/www/html
-COPY / /var/www/html/
-RUN apk add --no-cache nginx \
-    && mkdir /run/nginx \
-    && chown -R www-data:www-data cache/ config/ \
-    && mv default.conf /etc/nginx/conf.d \
-    && mv php.ini /usr/local/etc/php
+
+COPY docker-entrypoint.sh php.ini default.conf /
+RUN apk add --no-cache \
+        git \
+        bash \
+        nginx \
+        tzdata \
+        openssh && \
+    mkdir -p /run/nginx && \
+    mv /default.conf /etc/nginx/conf.d && \
+    mv /php.ini /usr/local/etc/php && \
+    chmod +x /docker-entrypoint.sh && \
+    git clone https://github.com/donwa/oneindex.git /var/www/html && \
+    ssh-keygen -A
 
 EXPOSE 80
 # Persistent config file and cache
 VOLUME [ "/var/www/html/config", "/var/www/html/cache" ]
-
-CMD php-fpm & \
-    nginx -g "daemon off;"
+ENTRYPOINT [ "/docker-entrypoint.sh" ]
